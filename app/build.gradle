@@ -1,0 +1,58 @@
+plugins {
+    alias(libs.plugins.android.application)
+    id("com.chaquo.python")
+}
+
+android {
+    namespace 'com.npdep.npps4'
+    compileSdk {
+        version = release(36)
+    }
+
+    defaultConfig {
+        applicationId "com.npdep.npps4"
+        minSdk 24
+        targetSdk 36
+        versionCode 1
+        versionName "1.0"
+
+        ndk {
+            abiFilters "arm64-v8a", "x86_64"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    buildFeatures {
+        aidl = true
+    }
+}
+
+chaquopy {
+    defaultConfig {
+        version = "3.14"
+
+        pip {
+            options("--find-links", "prebuilt-wheels")
+            install("-r", "src/main/python/requirements.txt")
+        }
+    }
+}
+
+dependencies {
+    implementation libs.appcompat
+    implementation libs.material
+    implementation libs.activity
+    implementation libs.constraintlayout
+    implementation libs.viewpager2
+}

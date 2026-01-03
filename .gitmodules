@@ -1,0 +1,3 @@
+[submodule "app/src/main/python"]
+	path = app/src/main/python
+	url = https://github.com/DarkEnergyProcessor/NPPS4
