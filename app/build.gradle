@@ -3,6 +3,41 @@ plugins {
     id("com.chaquo.python")
 }
 
+import groovy.xml.XmlUtil
+
+abstract class GenerateEnvTask extends DefaultTask {
+    @InputFile
+    abstract RegularFileProperty getEnvFile()
+
+    @OutputFile
+    abstract RegularFileProperty getOutputFile()
+
+    @TaskAction
+    void taskAction() {
+        Properties props = new Properties()
+        File inputFile = getEnvFile().get().getAsFile()
+
+        if (inputFile.exists()) {
+            inputFile.withInputStream { props.load(it) }
+        }
+
+        StringBuilder xmlContent = new StringBuilder()
+        xmlContent.append('<?xml version="1.0" encoding="utf-8"?>\n')
+        xmlContent.append('<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n')
+        xmlContent.append('    <application>\n')
+
+        props.each { key, value ->
+            String v = XmlUtil.escapeXml(value)
+            xmlContent.append("        <meta-data android:name=\"env.${key}\" android:value=\"${v}\" />\n")
+        }
+
+        xmlContent.append('    </application>\n')
+        xmlContent.append('</manifest>')
+
+        getOutputFile().get().getAsFile().text = xmlContent.toString()
+    }
+}
+
 android {
     namespace 'com.npdep.npps4'
     compileSdk {
@@ -47,6 +82,20 @@ chaquopy {
             install("-r", "src/main/python/requirements.txt")
         }
     }
+}
+
+androidComponents {
+    def taskProvider = tasks.register("generateMetadataManifest", GenerateEnvTask) {
+        envFile = rootProject.file("envvars.txt")
+        outputFile = layout.buildDirectory.file("generated/metadata_manifest/AndroidManifest.xml")
+    }
+
+    onVariants(selector().all(), { variant ->
+        variant.sources.manifests.addGeneratedManifestFile(
+                taskProvider,
+                { it.getOutputFile() }
+        )
+    })
 }
 
 dependencies {

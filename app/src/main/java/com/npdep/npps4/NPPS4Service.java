@@ -6,6 +6,7 @@ import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.os.Build;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.system.ErrnoException;
@@ -65,19 +66,17 @@ public class NPPS4Service extends Service {
 
             Python py = Python.getInstance();
             PyObject androidMain = py.getModule("android_main");
-            startForeground(startId, notification, FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(startId, notification, FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+            } else {
+                startForeground(startId, notification);
+            }
 
             androidMain.callAttr("start_server");
 
             serverRunnable = null;
             stopSelf(startId);
         };
-        try {
-            Os.setenv("NPPS4_CONFIG_DOWNLOAD_BACKEND", "n4dlapi", true);
-            //Os.setenv("NPPS4_CONFIG_DOWNLOAD_N4DLAPI_SERVER", "redacted", true);
-        } catch (ErrnoException e) {
-            Log.e("NPPS4Service", "yea", e);
-        }
         executor.submit(runnable);
 
         return START_STICKY;
