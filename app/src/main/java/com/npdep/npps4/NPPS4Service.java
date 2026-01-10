@@ -3,18 +3,18 @@ package com.npdep.npps4;
 import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
-import android.os.RemoteException;
-import android.system.ErrnoException;
-import android.system.Os;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
 
+import com.chaquo.python.PyException;
 import com.chaquo.python.PyObject;
 import com.chaquo.python.Python;
 
@@ -27,6 +27,11 @@ public class NPPS4Service extends Service {
     private Runnable serverRunnable = null;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final INPPS4 binder = new INPPS4.Stub() {
+        @Override
+        public boolean isRunning() {
+            return running;
+        }
+
         @Override
         public void shutdown() {
             if (serverRunnable == null) {
@@ -46,17 +51,28 @@ public class NPPS4Service extends Service {
         }
     };
     private final Queue<ConsoleText> queue = new LinkedList<>();
+    private boolean running = false;
 
     public NPPS4Service() {
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        final String CHANNEL_ID = NPPS4Service.class.getName();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "NPPS4", importance);
+            channel.setDescription("NPPS4 Server Status");
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+
         Runnable runnable = () -> {
             Intent notificationIntent = new Intent(this, MainActivity.class);
             PendingIntent pendingIntent = PendingIntent.getActivity(this,
                     0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
-            Notification notification = new NotificationCompat.Builder(this, NPPS4Service.class.getName())
+            Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                     .setContentTitle("NPPS4 Server")
                     .setContentText("Server is running")
                     .setSmallIcon(R.drawable.ic_launcher_foreground) // Make sure this icon exists
@@ -64,16 +80,24 @@ public class NPPS4Service extends Service {
                     .setOngoing(true)
                     .build();
 
-            Python py = Python.getInstance();
-            PyObject androidMain = py.getModule("android_main");
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 startForeground(startId, notification, FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
             } else {
                 startForeground(startId, notification);
             }
 
-            androidMain.callAttr("start_server");
+            try {
+                Python py = Python.getInstance();
+                PyObject androidMain = py.getModule("android_main");
 
+                androidMain.callAttr("setup_server");
+                running = true;
+                androidMain.callAttr("start_server");
+            } catch (PyException e) {
+                Log.e("NPPS4", "Python error", e);
+            }
+
+            running = false;
             serverRunnable = null;
             stopSelf(startId);
         };

@@ -5,6 +5,7 @@ package com.npdep.npps4;
 parcelable ConsoleText;
 
 interface INPPS4 {
+	boolean isRunning();
     void shutdown();
 	ConsoleText pollConsole();
 }

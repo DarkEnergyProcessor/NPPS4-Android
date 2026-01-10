@@ -77,10 +77,23 @@ chaquopy {
     defaultConfig {
         version = "3.14"
 
+        pyc {
+            src = false
+        }
+
         pip {
             options("--find-links", "prebuilt-wheels")
             install("-r", "src/main/python/requirements.txt")
         }
+
+        // Cryptodome needs to be extracted. Otherwise it won't able to find its native libs.
+        //extractPackages("Cryptodome")
+        // external needs to be extracted, otherwise external scripts won't run
+        //extractPackages("external")
+        // These also needs to be extracted, otherwise migration fails
+        //extractPackages("npps4.alembic.env")
+        //extractPackages("npps4.alembic.versions")
+        extractPackages("*")
     }
 }
 
