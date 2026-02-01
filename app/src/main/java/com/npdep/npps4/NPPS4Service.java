@@ -24,12 +24,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class NPPS4Service extends Service {
+    public static final int STATE_STOPPED = 0;
+    public static final int STATE_STARTING = 1;
+    public static final int STATE_RUNNING = 2;
+    public static final int STATE_STOPPING = 3;
+
     private Runnable serverRunnable = null;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private int state = STATE_STOPPED;
     private final INPPS4 binder = new INPPS4.Stub() {
         @Override
-        public boolean isRunning() {
-            return running;
+        public int getStatus() {
+            return state;
         }
 
         @Override
@@ -40,6 +46,7 @@ public class NPPS4Service extends Service {
 
             Python py = Python.getInstance();
             PyObject androidMain = py.getModule("android_main");
+            state = STATE_STOPPING;
             androidMain.callAttr("stop_server");
         }
 
@@ -51,7 +58,6 @@ public class NPPS4Service extends Service {
         }
     };
     private final Queue<ConsoleText> queue = new LinkedList<>();
-    private boolean running = false;
 
     public NPPS4Service() {
     }
@@ -86,18 +92,19 @@ public class NPPS4Service extends Service {
                 startForeground(startId, notification);
             }
 
+            state = STATE_STARTING;
             try {
                 Python py = Python.getInstance();
                 PyObject androidMain = py.getModule("android_main");
 
                 androidMain.callAttr("setup_server");
-                running = true;
+                state = STATE_RUNNING;
                 androidMain.callAttr("start_server");
             } catch (PyException e) {
                 Log.e("NPPS4", "Python error", e);
             }
 
-            running = false;
+            state = STATE_STOPPED;
             serverRunnable = null;
             stopSelf(startId);
         };
