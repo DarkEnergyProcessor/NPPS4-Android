@@ -82,7 +82,7 @@ chaquopy {
         }
 
         pip {
-            options("--find-links", "prebuilt-wheels")
+            options("--extra-index-url", "https://npps4-whl.npdep.com/")
             install("-r", "src/main/python/requirements.txt")
         }
 
@@ -109,6 +109,14 @@ androidComponents {
                 { it.getOutputFile() }
         )
     })
+}
+
+allprojects {
+    tasks.withType(JavaCompile).tap {
+        configureEach {
+            options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+        }
+    }
 }
 
 dependencies {

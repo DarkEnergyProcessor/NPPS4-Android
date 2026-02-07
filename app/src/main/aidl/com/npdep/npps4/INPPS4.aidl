@@ -2,10 +2,12 @@
 package com.npdep.npps4;
 
 // Declare any non-default types here with import statements
+import com.npdep.npps4.IStateCallbackResult;
 parcelable ConsoleText;
 
 interface INPPS4 {
 	int getStatus();
-    void shutdown();
+	oneway void getStatusAsync(IStateCallbackResult resultCb);
+    oneway void shutdown();
 	ConsoleText pollConsole();
 }

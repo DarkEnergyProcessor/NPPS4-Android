@@ -18,7 +18,7 @@ public class StateAdapter extends FragmentStateAdapter {
     public Fragment createFragment(int position) {
         switch (position) {
             case 0:
-                return StatusFragment.newInstance(bridge);
+                return new StatusFragment();
             case 1:
                 return LogFragment.newInstance(bridge);
             default:

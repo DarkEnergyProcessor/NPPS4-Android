@@ -8,6 +8,8 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import android.os.RemoteException;
+import android.util.Log;
 import android.view.Choreographer;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,18 +18,18 @@ import android.widget.Button;
 import android.widget.TextView;
 
 public class StatusFragment extends Fragment {
-
-    private Bridge bridge;
     private boolean stopChoreographerLoop = false;
+    private int lastState = NPPS4Service.STATE_STOPPED;
+
+    private final IStateCallbackResult stateCallbackResult = new IStateCallbackResult.Stub() {
+        @Override
+        public void onStateCallbackResult(int status) {
+            lastState = status;
+        }
+    };
 
     public StatusFragment() {
         // Required empty public constructor
-    }
-
-    public static StatusFragment newInstance(Bridge bridge) {
-        StatusFragment fragment = new StatusFragment();
-        fragment.bridge = bridge;
-        return fragment;
     }
 
     @Override
@@ -50,17 +52,28 @@ public class StatusFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        Bridge bridge = Bridge.getInstance();
         super.onViewCreated(view, savedInstanceState);
 
         view.<Button>findViewById(R.id.button).setOnClickListener(view1 -> {
-            Intent intent = new Intent(bridge.activity, NPPS4Service.class);
-            ContextCompat.startForegroundService(bridge.activity, intent);
-        });
+            if (bridge.binder == null) {
+                return;
+            }
 
-        TextView[] textStatus = new TextView[]{
-                view.findViewById(R.id.textView),
-                view.findViewById(R.id.textView2)
-        };
+            try {
+                switch (bridge.binder.getStatus()) {
+                    case NPPS4Service.STATE_STOPPED:
+                        Intent intent = new Intent(bridge.activity, NPPS4Service.class);
+                        ContextCompat.startForegroundService(bridge.activity, intent);
+                        break;
+                    case NPPS4Service.STATE_RUNNING:
+                        bridge.binder.shutdown();
+                        break;
+                }
+            } catch (RemoteException e) {
+                Log.e("StatusFragment", "ohno", e);
+            }
+        });
 
         stopChoreographerLoop = false;
         Choreographer.getInstance().postFrameCallback(new Choreographer.FrameCallback() {
@@ -70,12 +83,33 @@ public class StatusFragment extends Fragment {
                     return;
                 }
 
-                int serverActive = bridge.binder != null ? 1 : 0;
-                if (textStatus[serverActive].getVisibility() == View.GONE) {
-                    textStatus[serverActive].setVisibility(View.VISIBLE);
-                    textStatus[1 - serverActive].setVisibility(View.GONE);
+                Bridge bridge = Bridge.getInstance();
+                if (bridge.binder == null) {
+                    lastState = NPPS4Service.STATE_STOPPED;
                 }
 
+                TextView status = view.findViewById(R.id.textView);
+                switch (lastState) {
+                    case NPPS4Service.STATE_STOPPED:
+                        status.setText("Server Stopped");
+                        break;
+                    case NPPS4Service.STATE_STARTING:
+                        status.setText("Server Starting");
+                        break;
+                    case NPPS4Service.STATE_RUNNING:
+                        status.setText("Server is Running");
+                        break;
+                    case NPPS4Service.STATE_STOPPING:
+                        status.setText("Server Stopping");
+                        break;
+                }
+
+                if (bridge.binder != null) {
+                    try {
+                        bridge.binder.getStatusAsync(stateCallbackResult);
+                    } catch (RemoteException ignored) {
+                    }
+                }
                 Choreographer.getInstance().postFrameCallback(this);
             }
         });

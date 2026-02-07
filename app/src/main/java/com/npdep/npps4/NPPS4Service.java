@@ -10,6 +10,7 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
@@ -36,6 +37,11 @@ public class NPPS4Service extends Service {
         @Override
         public int getStatus() {
             return state;
+        }
+
+        @Override
+        public void getStatusAsync(IStateCallbackResult resultCb) throws RemoteException {
+            resultCb.onStateCallbackResult(state);
         }
 
         @Override
@@ -106,8 +112,10 @@ public class NPPS4Service extends Service {
 
             state = STATE_STOPPED;
             serverRunnable = null;
+            stopForeground(true);
             stopSelf(startId);
         };
+        serverRunnable = runnable;
         executor.submit(runnable);
 
         return START_STICKY;
