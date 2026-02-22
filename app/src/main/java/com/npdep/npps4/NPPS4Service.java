@@ -65,7 +65,7 @@ public class NPPS4Service extends Service {
         }
 
         @Override
-        public String getLastError() throws RemoteException {
+        public String getLastError() {
             if (lastError != null) {
                 String err = Log.getStackTraceString(lastError);
                 lastError = null;

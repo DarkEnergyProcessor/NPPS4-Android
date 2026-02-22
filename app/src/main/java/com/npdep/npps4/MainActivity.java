@@ -1,10 +1,7 @@
 package com.npdep.npps4;
 
 import android.Manifest;
-import android.app.ActivityManager;
-import android.app.Service;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
@@ -13,7 +10,6 @@ import android.os.Bundle;
 import android.os.IBinder;
 
 import androidx.activity.EdgeToEdge;
-import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -39,11 +35,7 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private final ActivityResultLauncher<String> notificationPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), new ActivityResultCallback<Boolean>() {
-        @Override
-        public void onActivityResult(Boolean o) {
-
-        }
+    private final ActivityResultLauncher<String> notificationPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), o -> {
     });
 
     @Override
@@ -69,16 +61,7 @@ public class MainActivity extends AppCompatActivity {
         StateAdapter adapter = new StateAdapter(this, bridge);
         viewPager.setAdapter(adapter);
 
-        new TabLayoutMediator(tabLayout, viewPager, (tab, i) -> {
-            switch (i) {
-                case 0:
-                    tab.setText("Server");
-                    break;
-                case 1:
-                    tab.setText("Logs");
-                    break;
-            }
-        }).attach();
+        new TabLayoutMediator(tabLayout, viewPager, (tab, i) -> tab.setText(StateAdapter.getFragmentName(i))).attach();
 
         // Permission is only required for Android 13 (API 33) and above
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
