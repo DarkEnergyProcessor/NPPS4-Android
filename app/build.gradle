@@ -64,6 +64,7 @@ android {
     }
 
     compileOptions {
+        coreLibraryDesugaringEnabled  true
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
@@ -86,26 +87,21 @@ chaquopy {
             install("-r", "src/main/python/requirements.txt")
         }
 
-        // Cryptodome needs to be extracted. Otherwise it won't able to find its native libs.
-        //extractPackages("Cryptodome")
-        // external needs to be extracted, otherwise external scripts won't run
-        //extractPackages("external")
-        // These also needs to be extracted, otherwise migration fails
-        //extractPackages("npps4.alembic.env")
-        //extractPackages("npps4.alembic.versions")
+        // All packages needs to be extracted.
+        // Otherwise, alembic won't able to find any revisions.
         extractPackages("*")
     }
 }
 
 androidComponents {
-    def taskProvider = tasks.register("generateMetadataManifest", GenerateEnvTask) {
+    def metadataManifestTask = tasks.register("generateMetadataManifest", GenerateEnvTask) {
         envFile = rootProject.file("envvars.txt")
         outputFile = layout.buildDirectory.file("generated/metadata_manifest/AndroidManifest.xml")
     }
 
     onVariants(selector().all(), { variant ->
         variant.sources.manifests.addGeneratedManifestFile(
-                taskProvider,
+                metadataManifestTask,
                 { it.getOutputFile() }
         )
     })
@@ -125,4 +121,5 @@ dependencies {
     implementation libs.activity
     implementation libs.constraintlayout
     implementation libs.viewpager2
+    coreLibraryDesugaring libs.desugar.jdk.libs.nio
 }
