@@ -48,8 +48,8 @@ android {
         applicationId "com.npdep.npps4"
         minSdk 24
         targetSdk 36
-        versionCode 1
-        versionName "1.0"
+        versionCode 20260222
+        versionName "0.0.20250222"
 
         ndk {
             abiFilters "arm64-v8a", "x86_64"

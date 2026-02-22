@@ -98,9 +98,11 @@ public class StatusFragment extends Fragment {
                     case NPPS4Service.STATE_STOPPED:
                         status.setText("Server Stopped");
                         String msg = null;
-                        try {
-                            msg = bridge.binder.getLastError();
-                        } catch (RemoteException ignored) {}
+                        if (bridge.binder != null) {
+                            try {
+                                msg = bridge.binder.getLastError();
+                            } catch (RemoteException ignored) {}
+                        }
                         if (msg != null && !msg.isEmpty()) {
                             TextView errorText = view.findViewById(R.id.textView2);
                             errorText.setText(msg);
