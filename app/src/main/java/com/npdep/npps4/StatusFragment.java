@@ -60,9 +60,12 @@ public class StatusFragment extends Fragment {
                 return;
             }
 
+            TextView errorText = view.findViewById(R.id.textView2);
+
             try {
                 switch (bridge.binder.getStatus()) {
                     case NPPS4Service.STATE_STOPPED:
+                        errorText.setVisibility(View.GONE);
                         Intent intent = new Intent(bridge.activity, NPPS4Service.class);
                         ContextCompat.startForegroundService(bridge.activity, intent);
                         break;
@@ -72,6 +75,8 @@ public class StatusFragment extends Fragment {
                 }
             } catch (RemoteException e) {
                 Log.e("StatusFragment", "ohno", e);
+                errorText.setText(Log.getStackTraceString(e));
+                errorText.setVisibility(View.VISIBLE);
             }
         });
 
@@ -92,6 +97,15 @@ public class StatusFragment extends Fragment {
                 switch (lastState) {
                     case NPPS4Service.STATE_STOPPED:
                         status.setText("Server Stopped");
+                        String msg = null;
+                        try {
+                            msg = bridge.binder.getLastError();
+                        } catch (RemoteException ignored) {}
+                        if (msg != null && !msg.isEmpty()) {
+                            TextView errorText = view.findViewById(R.id.textView2);
+                            errorText.setText(msg);
+                            errorText.setVisibility(View.VISIBLE);
+                        }
                         break;
                     case NPPS4Service.STATE_STARTING:
                         status.setText("Server Starting");

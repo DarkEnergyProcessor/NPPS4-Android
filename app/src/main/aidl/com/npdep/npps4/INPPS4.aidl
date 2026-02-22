@@ -10,4 +10,5 @@ interface INPPS4 {
 	oneway void getStatusAsync(IStateCallbackResult resultCb);
     oneway void shutdown();
 	ConsoleText pollConsole();
+	@nullable String getLastError();
 }

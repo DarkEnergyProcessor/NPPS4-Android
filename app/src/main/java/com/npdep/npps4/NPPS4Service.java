@@ -30,6 +30,7 @@ public class NPPS4Service extends Service {
     public static final int STATE_RUNNING = 2;
     public static final int STATE_STOPPING = 3;
 
+    private Exception lastError = null;
     private Runnable serverRunnable = null;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private int state = STATE_STOPPED;
@@ -61,6 +62,17 @@ public class NPPS4Service extends Service {
             synchronized (queue) {
                 return queue.poll();
             }
+        }
+
+        @Override
+        public String getLastError() throws RemoteException {
+            if (lastError != null) {
+                String err = Log.getStackTraceString(lastError);
+                lastError = null;
+                return err;
+            }
+
+            return null;
         }
     };
     private final Queue<ConsoleText> queue = new LinkedList<>();
@@ -108,11 +120,12 @@ public class NPPS4Service extends Service {
                 androidMain.callAttr("start_server");
             } catch (PyException e) {
                 Log.e("NPPS4", "Python error", e);
+                lastError = e;
             }
 
             state = STATE_STOPPED;
             serverRunnable = null;
-            stopForeground(true);
+            stopForeground(STOP_FOREGROUND_REMOVE);
             stopSelf(startId);
         };
         serverRunnable = runnable;
